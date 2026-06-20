@@ -1,0 +1,904 @@
+/* ============================================
+   TeamUp — Premium Dark Mode Design System
+   HIG-Compliant: Hierarchy, Harmony, Consistency
+   ============================================ */
+
+/* --- Google Fonts Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+/* --- CSS Custom Properties (Design Tokens) --- */
+:root {
+  /* ── Base Colors ── */
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #0f0f2a;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-glass-hover: rgba(255, 255, 255, 0.2);
+
+  /* ── Accent Palette ── */
+  --accent-cyan: #06b6d4;
+  --accent-purple: #a855f7;
+  --accent-pink: #ec4899;
+  --accent-green: #22c55e;
+  --accent-amber: #f59e0b;
+  --accent-blue: #3b82f6;
+  --accent-red: #ef4444;
+  --accent-teal: #14b8a6;
+  --accent-orange: #f97316;
+  --accent-violet: #8b5cf6;
+  --gradient-primary: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+
+  /* ── HIG: Hierarchy — Typographic Scale (3+ distinct levels) ──
+       Display > Title > Heading > Body > Caption > Overline
+       Ratio ~1.33 (Perfect Fourth) */
+  --font-size-display: 2.5rem;    /* 40px — H1, hero titles */
+  --font-size-title: 1.5rem;      /* 24px — Section titles, modal headers */
+  --font-size-heading: 1.125rem;  /* 18px — Card headers, sub-sections */
+  --font-size-body: 1rem;         /* 16px — Primary body text */
+  --font-size-small: 0.875rem;    /* 14px — Secondary text, labels */
+  --font-size-caption: 0.75rem;   /* 12px — Badges, hints, counters */
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* ── Text Colors (3-level hierarchy) ── */
+  --text-primary: #f1f5f9;     /* Primary — highest contrast */
+  --text-secondary: #94a3b8;   /* Secondary — dimmer */
+  --text-muted: #64748b;       /* Muted — lowest priority */
+
+  /* ── HIG: Harmony — Spacing Scale (strict 4px/8px multiples) ──
+       4, 8, 12, 16, 24, 32, 48, 64 */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+
+  /* ── HIG: Consistency — Border Radius Tokens ── */
+  --radius-sm: 0.5rem;    /* 8px — small elements: badges, inputs */
+  --radius-md: 0.75rem;   /* 12px — buttons, selects */
+  --radius-lg: 1rem;      /* 16px — cards */
+  --radius-xl: 1.25rem;   /* 20px — panels, glass cards */
+  --radius-full: 9999px;  /* pills */
+
+  /* ── HIG: Consistency — Icon Size Tokens ── */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* ── HIG: Hierarchy — Z-axis Elevation (layered shadows) ── */
+  --shadow-elevation-1: 0 1px 4px rgba(0, 0, 0, 0.2);                          /* Cards at rest */
+  --shadow-elevation-2: 0 4px 24px rgba(0, 0, 0, 0.3);                         /* Cards, panels */
+  --shadow-elevation-3: 0 8px 40px rgba(0, 0, 0, 0.5);                         /* Hover, dropdowns */
+  --shadow-elevation-4: 0 16px 64px rgba(0, 0, 0, 0.6);                        /* Modals, overlays */
+  --shadow-glow-cyan: 0 0 30px rgba(6, 182, 212, 0.15);
+  --shadow-glow-purple: 0 0 30px rgba(168, 85, 247, 0.15);
+
+  /* ── HIG: Harmony — Natural Easing (no linear) ── */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.6, 1);
+
+  --transition-fast: 150ms var(--ease-out);
+  --transition-base: 250ms var(--ease-out);
+  --transition-slow: 400ms var(--ease-out);
+  --transition-spring: 500ms var(--ease-spring);
+
+  /* ── Group Colors (10 distinct for harmony) ── */
+  --group-1: #06b6d4;
+  --group-2: #a855f7;
+  --group-3: #ec4899;
+  --group-4: #22c55e;
+  --group-5: #f59e0b;
+  --group-6: #3b82f6;
+  --group-7: #ef4444;
+  --group-8: #14b8a6;
+  --group-9: #f97316;
+  --group-10: #8b5cf6;
+}
+
+/* ============================================
+   Reset & Base
+   ============================================ */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.6;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Animated background gradient orbs ── */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+  animation: floatOrb 12s ease-in-out infinite alternate;
+}
+
+body::before {
+  width: 500px;
+  height: 500px;
+  background: var(--accent-cyan);
+  top: -150px;
+  right: -100px;
+}
+
+body::after {
+  width: 600px;
+  height: 600px;
+  background: var(--accent-purple);
+  bottom: -200px;
+  left: -150px;
+  animation-delay: -6s;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(60px, 40px) scale(1.15); }
+}
+
+/* ============================================
+   Layout Container
+   ============================================ */
+.app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  min-height: 100vh;
+}
+
+/* ============================================
+   HIG: Hierarchy — Header
+   H1 is the single strongest visual element
+   ============================================ */
+.header {
+  text-align: center;
+  margin-bottom: var(--space-16);
+  padding-top: var(--space-8);
+}
+
+.header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.header__icon {
+  width: 56px;
+  height: 56px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  box-shadow: var(--shadow-glow-cyan);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: var(--shadow-glow-cyan); transform: scale(1); }
+  50% { box-shadow: 0 0 50px rgba(6, 182, 212, 0.3); transform: scale(1.05); }
+}
+
+/* HIG: Hierarchy — H1 is display-level, highest visual weight */
+.header__title {
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-extrabold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* HIG: Hierarchy — Tagline is body-level, clearly subordinate */
+.header__tagline {
+  font-size: var(--font-size-heading);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-light);
+  letter-spacing: 0.01em;
+  margin-top: var(--space-2);
+}
+
+/* ============================================
+   Glass Card — Base Component
+   HIG: Consistency — Single reusable implementation
+   ============================================ */
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-elevation-2);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.glass-card:hover {
+  border-color: var(--border-glass-hover);
+}
+
+/* ============================================
+   Input Section
+   ============================================ */
+.input-section {
+  margin-bottom: var(--space-12);
+}
+
+.input-section__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+/* HIG: Hierarchy — Label is small-level text */
+.input-section__label-text {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* HIG: Consistency — Icon uses token size */
+.input-section__label-text svg {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--accent-cyan);
+}
+
+/* HIG: Hierarchy — Counter is caption-level, lower than label */
+.name-counter {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  transition: all var(--transition-base);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.name-counter.has-names {
+  color: var(--accent-green);
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.textarea-wrapper {
+  position: relative;
+  margin-bottom: var(--space-6);
+}
+
+/* HIG: Harmony — Textarea uses system spacing & native semantics */
+.names-textarea {
+  width: 100%;
+  min-height: 200px;
+  max-height: 350px;
+  padding: var(--space-6);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-body);
+  line-height: 1.8;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.names-textarea::placeholder {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.names-textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.12);
+}
+
+/* ============================================
+   Controls Row
+   HIG: Harmony — Consistent spacing, aligned items
+   ============================================ */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* HIG: Hierarchy — Label is small, subordinate to the select */
+.control-group__label {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* HIG: Harmony — Select uses native HTML element, styled consistently */
+.group-size-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-8) var(--space-2) var(--space-4);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-base);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.group-size-select:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.12);
+}
+
+.group-size-select:hover {
+  border-color: var(--border-glass-hover);
+}
+
+/* ============================================
+   HIG: Hierarchy — Primary CTA (Shuffle Button)
+   Must have HIGHEST contrast on the page
+   Strongest shadow, largest padding, bold weight
+   ============================================ */
+.shuffle-btn {
+  flex: 1;
+  min-width: 220px;
+  padding: var(--space-4) var(--space-8);
+  background: var(--gradient-primary);
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-bold);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 24px rgba(6, 182, 212, 0.35);
+  letter-spacing: 0.02em;
+}
+
+.shuffle-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.shuffle-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.45);
+}
+
+.shuffle-btn:hover::before {
+  opacity: 1;
+}
+
+.shuffle-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.shuffle-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.shuffle-btn:disabled:hover::before {
+  opacity: 0;
+}
+
+.shuffle-btn__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   Animation Stage (Overlay)
+   HIG: Hierarchy — Z-axis elevation-4 (highest)
+   ============================================ */
+.animation-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 10, 26, 0.92);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.animation-stage.active {
+  display: flex;
+  animation: fadeIn 300ms var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* HIG: Hierarchy — Title-level text inside overlay */
+.animation-stage__title {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-bold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: pulseText 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulseText {
+  from { opacity: 0.6; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1.02); }
+}
+
+.animation-stage__cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 600px;
+  padding: var(--space-6);
+}
+
+/* ── Name Card (Animation) ── */
+.name-card {
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  opacity: 0;
+  animation: cardAppear 300ms var(--ease-out) forwards;
+  transition: all var(--transition-base);
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(calc(var(--r, 0) * 1deg));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.name-card.shuffling {
+  animation: shuffleCard 200ms ease-in-out infinite alternate;
+}
+
+@keyframes shuffleCard {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(calc(var(--dx, 5) * 1px), calc(var(--dy, -3) * 1px)) rotate(calc(var(--r, 3) * 1deg)); }
+  50% { transform: translate(calc(var(--dx, -4) * 1px), calc(var(--dy, 6) * 1px)) rotate(calc(var(--r, -2) * 1deg)); }
+  75% { transform: translate(calc(var(--dx, 3) * 1px), calc(var(--dy, -5) * 1px)) rotate(calc(var(--r, 4) * 1deg)); }
+  100% { transform: translate(calc(var(--dx, -6) * 1px), calc(var(--dy, 2) * 1px)) rotate(calc(var(--r, -3) * 1deg)); }
+}
+
+.name-card.assigned {
+  animation: assignCard 500ms var(--ease-spring) forwards;
+  border-color: var(--assigned-color, var(--accent-cyan));
+  box-shadow: 0 0 15px rgba(var(--assigned-color-rgb, 6, 182, 212), 0.3);
+}
+
+@keyframes assignCard {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* ============================================
+   Results Section
+   HIG: Hierarchy — H2 title-level, clearly below H1
+   ============================================ */
+.results-section {
+  margin-top: var(--space-12);
+  display: none;
+}
+
+.results-section.visible {
+  display: block;
+  animation: slideUp 500ms var(--ease-spring);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.results-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+/* HIG: Hierarchy — H2 is title-level, subordinate to H1 display */
+.results-section__title {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* HIG: Consistency — Action buttons share one implementation */
+.results-section__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ============================================
+   HIG: Consistency — Action Button (single impl)
+   Secondary priority: lower contrast than Primary CTA
+   ============================================ */
+.action-btn {
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all var(--transition-base);
+}
+
+.action-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-glass-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevation-1);
+}
+
+.action-btn.copied {
+  color: var(--accent-green);
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* HIG: Consistency — All action button icons use same size */
+.action-btn svg {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+/* ============================================
+   Group Cards Grid
+   HIG: Harmony — Consistent spacing in grid
+   ============================================ */
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+/* HIG: Consistency — Group card is a variant of glass-card */
+.group-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  opacity: 0;
+  animation: groupAppear 500ms var(--ease-spring) forwards;
+  animation-delay: var(--delay, 0ms);
+  box-shadow: var(--shadow-elevation-1);
+  transition: all var(--transition-base);
+}
+
+/* HIG: Hierarchy — Hover elevates card (stronger shadow) */
+.group-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-elevation-3);
+  border-color: var(--group-color, var(--accent-cyan));
+}
+
+@keyframes groupAppear {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.group-card__header {
+  padding: var(--space-4) var(--space-6);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--group-color, var(--accent-cyan)) 15%, transparent),
+    transparent
+  );
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* HIG: Hierarchy — Group name is heading-level */
+.group-card__name {
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-bold);
+  color: var(--group-color, var(--accent-cyan));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* HIG: Hierarchy — Badge is caption-level, lowest weight */
+.group-card__badge {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.group-card__members {
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* HIG: Hierarchy — Member name is body-level */
+.member-item {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  transition: background var(--transition-fast);
+}
+
+.member-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* HIG: Hierarchy — Member number is caption-level */
+.member-item__number {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  min-width: 24px;
+}
+
+/* ============================================
+   Confetti Canvas
+   HIG: Hierarchy — Z-axis highest (above overlays)
+   ============================================ */
+#confetti-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+/* ============================================
+   Toast Notification
+   HIG: Hierarchy — Highest z-index, elevation-4
+   ============================================ */
+.toast {
+  position: fixed;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--bg-secondary);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-elevation-4);
+  z-index: 300;
+  opacity: 0;
+  transition: all var(--transition-spring);
+}
+
+.toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* HIG: Consistency — Toast icon uses token size */
+.toast svg {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  color: var(--accent-green);
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.empty-hint {
+  text-align: center;
+  padding: var(--space-16) var(--space-8);
+  color: var(--text-muted);
+}
+
+.empty-hint__icon {
+  font-size: var(--font-size-display);
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.empty-hint__text {
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+}
+
+/* ============================================
+   HIG: Consistency — Responsive Breakpoint
+   Mobile-first, single consistent breakpoint
+   ============================================ */
+@media (max-width: 640px) {
+  .app-container {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .header {
+    margin-bottom: var(--space-12);
+  }
+
+  .header__title {
+    font-size: 2rem;
+  }
+
+  .header__icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+
+  .header__tagline {
+    font-size: var(--font-size-body);
+  }
+
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shuffle-btn {
+    min-width: unset;
+  }
+
+  .groups-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .glass-card {
+    padding: var(--space-6);
+  }
+
+  .results-section__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .results-section__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   Scrollbar & Selection
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+::selection {
+  background: rgba(6, 182, 212, 0.3);
+  color: white;
+}
