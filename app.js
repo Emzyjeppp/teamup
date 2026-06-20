@@ -1,5 +1,6 @@
 // ============================================
 //  TeamUp — App Logic, Animations & Confetti
+//  Supports Simple Mode + Custom Task Mode
 // ============================================
 
 (() => {
@@ -10,7 +11,9 @@
   const nameCounter = document.getElementById('name-counter');
   const groupSizeSelect = document.getElementById('group-size');
   const shuffleBtn = document.getElementById('shuffle-btn');
+  const shuffleCustomBtn = document.getElementById('shuffle-custom-btn');
   const resultsSection = document.getElementById('results-section');
+  const resultsTitle = document.getElementById('results-title');
   const groupsGrid = document.getElementById('groups-grid');
   const copyBtn = document.getElementById('copy-btn');
   const downloadBtn = document.getElementById('download-btn');
@@ -21,6 +24,28 @@
   const confettiCanvas = document.getElementById('confetti-canvas');
   const toast = document.getElementById('toast');
   const toastMessage = document.getElementById('toast-message');
+
+  // Custom mode elements
+  const modeSimpleBtn = document.getElementById('mode-simple-btn');
+  const modeCustomBtn = document.getElementById('mode-custom-btn');
+  const eventTitleGroup = document.getElementById('event-title-group');
+  const eventTitleInput = document.getElementById('event-title');
+  const taskBuilder = document.getElementById('task-builder');
+  const taskList = document.getElementById('task-list');
+  const addTaskBtn = document.getElementById('add-task-btn');
+  const slotCounter = document.getElementById('slot-counter');
+  const simpleControls = document.getElementById('simple-controls');
+  const customControls = document.getElementById('custom-controls');
+  const sectionDivider = document.getElementById('section-divider');
+  const slotMatch = document.getElementById('slot-match');
+  const slotMatchIcon = document.getElementById('slot-match-icon');
+  const slotMatchText = document.getElementById('slot-match-text');
+
+  // Import elements
+  const importBanner = document.getElementById('import-banner');
+  const importBannerDesc = document.getElementById('import-banner-desc');
+  const importBtn = document.getElementById('import-btn');
+  const importCloseBtn = document.getElementById('import-close-btn');
 
   // --- Group Color Palette ---
   const GROUP_COLORS = [
@@ -36,49 +61,42 @@
     { hex: '#8b5cf6', rgb: '139, 92, 246' },
   ];
 
+  // --- Default Emojis for tasks ---
+  const TASK_EMOJIS = ['📋', '🛒', '🍳', '📦', '🧽', '🔧', '📝', '🎨', '🏗️', '🧹', '🚿', '🪣', '🗑️', '💻', '📚'];
+
   // --- State ---
   let currentGroups = [];
+  let currentMode = 'simple'; // 'simple' | 'custom'
+  let currentEventTitle = '';
+  let currentTaskNames = [];
+  let taskIdCounter = 0;
   let isAnimating = false;
+  let parsedContextData = null;
+  let isBannerDismissed = false;
 
   // =====================
   //  Utility Functions
   // =====================
 
   /**
-   * Smart Parser — Detects and parses names from various input formats:
-   *
-   * 1. Newline-separated:     "Ahmad\nBudi\nCitra"
-   * 2. Comma-separated:       "Ahmad, Budi, Citra"
-   * 3. Semicolon-separated:   "Ahmad; Budi; Citra"
-   * 4. Tab-separated:         "Ahmad\tBudi\tCitra"
-   * 5. Numbered list:         "1. Ahmad\n2. Budi\n3. Citra"
-   * 6. Bullet list:           "- Ahmad\n- Budi\n• Citra"
-   * 7. CamelCase concat:      "AhmadBudiCitra" → ["Ahmad", "Budi", "Citra"]
-   * 8. Mixed (multi-line with commas per line)
+   * Smart Parser — Detects and parses names from various input formats
    */
   function parseNames(text) {
     if (!text || !text.trim()) return [];
 
     let names = [];
-
-    // Step 1: Split by newlines first
     const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
 
     for (const line of lines) {
-      // Step 2: Detect separator within each line
       let parts;
 
       if (line.includes(',')) {
-        // Comma-separated: "Ahmad, Budi, Citra"
         parts = line.split(',');
       } else if (line.includes(';')) {
-        // Semicolon-separated: "Ahmad; Budi; Citra"
         parts = line.split(';');
       } else if (line.includes('\t')) {
-        // Tab-separated
         parts = line.split('\t');
       } else {
-        // Single name per line (or CamelCase)
         parts = [line];
       }
 
@@ -86,27 +104,19 @@
         part = part.trim();
         if (!part) continue;
 
-        // Step 3: Strip common list prefixes
-        // "1. Ahmad" → "Ahmad", "1) Ahmad" → "Ahmad"
-        // "- Ahmad" → "Ahmad", "• Ahmad" → "Ahmad"
-        // "a. Ahmad" → "Ahmad", "a) Ahmad" → "Ahmad"
         part = part
-          .replace(/^\d+[\.\)\-\:]\s*/, '')  // "1. " or "1) " or "1- " or "1: "
-          .replace(/^[a-zA-Z][\.\)]\s*/, '') // "a. " or "a) "
-          .replace(/^[-–—•*▪▸►]\s*/, '')     // "- " or "• " or "* "
-          .replace(/[\.\,\;]+$/, '')          // trailing punctuation
+          .replace(/^\d+[\.\)\-\:]\s*/, '')
+          .replace(/^[a-zA-Z][\.\)]\s*/, '')
+          .replace(/^[-–—•*▪▸►]\s*/, '')
+          .replace(/[\.\,\;]+$/, '')
           .trim();
 
         if (!part) continue;
 
-        // Step 4: Detect CamelCase concatenation
-        // "JokoDewiFajar" → ["Joko", "Dewi", "Fajar"]
-        // Only if: single "word" (no spaces), length > 10, has multiple uppercase
         const uppercaseCount = (part.match(/[A-Z]/g) || []).length;
         const hasSpaces = /\s/.test(part);
 
         if (!hasSpaces && uppercaseCount >= 3 && part.length > 8) {
-          // Split on uppercase boundaries: aA → a, A
           const camelNames = part.split(/(?<=[a-z])(?=[A-Z])/);
           if (camelNames.length >= 2) {
             names.push(...camelNames.map(n => n.trim()).filter(n => n.length > 0));
@@ -114,23 +124,15 @@
           }
         }
 
-        // Step 5: If the part contains spaces, it might be space-separated names
-        // But only if ALL words are capitalized (e.g., "Ahmad Budi Citra")
-        // vs. a full name like "Ahmad Fajar" (2 words = likely full name)
         if (hasSpaces) {
           const words = part.split(/\s+/);
           const allCapitalized = words.every(w => /^[A-Z]/.test(w));
-          
-          // If more than 3 space-separated capitalized words AND each word is
-          // a single word (no compound like "Dewi Sartika"), treat as separate names
-          // Heuristic: if each "word" is ≤ 1 word and there are 4+ words
           if (allCapitalized && words.length >= 4 && words.every(w => w.length <= 15)) {
             names.push(...words);
             continue;
           }
         }
 
-        // Default: treat as a single name
         if (part.length > 0) {
           names.push(part);
         }
@@ -138,6 +140,161 @@
     }
 
     return names;
+  }
+
+  /**
+   * Parse context structure containing tasks/slots/names:
+   * e.g., "Kerja Bakti: \n Kolam 1 orang (Asror) \n ..."
+   */
+  function parseTaskContext(text) {
+    if (!text || !text.trim()) return null;
+
+    const lines = text.split(/\n/).map(l => l.trim());
+    let eventTitle = '';
+    const tasks = [];
+    const allNames = [];
+
+    // Helper to split names by connectors/commas and clean them up
+    function extractNamesFromString(str) {
+      if (!str) return [];
+      return str
+        .split(/,|\bdan\b|\band\b|&|;/i)
+        .map(n => n.trim().replace(/[\(\)\.\,]+$/, '').trim())
+        .filter(n => n.length > 0);
+    }
+
+    // Regexp to match task definition lines, e.g.:
+    // "Kolam 1 orang (Asror)"
+    // "🛒 Membeli Barang (2 orang)"
+    // "Garasi 2 orang"
+    const taskRegex = /^(.*?)\s*\(?(\d+)\s*(?:orang|pax|anggota|member)\)?\s*(.*)$/i;
+
+    let currentTask = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
+
+      const match = line.match(taskRegex);
+
+      if (match) {
+        // Push previous task if we had one and it's not empty
+        if (currentTask) {
+          tasks.push(currentTask);
+        }
+
+        let taskName = match[1].trim();
+        const size = parseInt(match[2], 10);
+        const trailing = match[3].trim();
+
+        // Extract emoji from task name if it starts with one
+        let emoji = '';
+        const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
+        const emojiMatch = taskName.match(emojiRegex);
+        if (emojiMatch && taskName.startsWith(emojiMatch[0])) {
+          emoji = emojiMatch[0];
+          taskName = taskName.substring(emoji.length).trim();
+        }
+        
+        // Clean task name
+        taskName = taskName.replace(/^[-–—•*▪▸►:\s]+/, '').replace(/[:\s]+$/, '').trim();
+
+        currentTask = {
+          emoji: emoji || null,
+          name: taskName,
+          size: size,
+          names: []
+        };
+
+        // If names are inline in trailing part, e.g. "(Asror)"
+        if (trailing) {
+          const innerMatch = trailing.match(/^\((.*)\)$/);
+          const nameStr = innerMatch ? innerMatch[1] : trailing;
+          const inlineNames = extractNamesFromString(nameStr);
+          if (inlineNames.length > 0) {
+            currentTask.names.push(...inlineNames);
+            allNames.push(...inlineNames);
+            tasks.push(currentTask);
+            currentTask = null; // Reset so next lines don't append names to this
+          }
+        }
+      } else {
+        // Line doesn't define a task.
+        // If we are currently collecting names for a task:
+        if (currentTask) {
+          // Check if this line looks like names
+          const lineNames = extractNamesFromString(line);
+          if (lineNames.length > 0) {
+            currentTask.names.push(...lineNames);
+            allNames.push(...lineNames);
+
+            // If we have collected enough names for this task, push it
+            if (currentTask.names.length >= currentTask.size) {
+              tasks.push(currentTask);
+              currentTask = null;
+            }
+          }
+        } else {
+          // No active task. This might be the event title!
+          // We only set the event title if we haven't found any tasks yet.
+          if (tasks.length === 0) {
+            let cleanLine = line.replace(/[:\s]+$/, '').trim();
+            if (cleanLine) {
+              if (eventTitle) {
+                eventTitle += ' - ' + cleanLine;
+              } else {
+                eventTitle = cleanLine;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Push last task if it was never pushed
+    if (currentTask) {
+      tasks.push(currentTask);
+    }
+
+    // Only return parsed data if we found at least one valid task
+    if (tasks.length > 0) {
+      return {
+        eventTitle: eventTitle || 'Tugas Kelompok',
+        tasks,
+        names: allNames
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Monitor name input real-time to detect tasks context and show import banner
+   */
+  function checkNamesInputForTasks() {
+    const text = namesInput.value;
+    
+    // If the banner was dismissed, don't show it again unless the text is cleared
+    if (isBannerDismissed) {
+      if (!text || !text.trim()) {
+        isBannerDismissed = false; // Reset dismiss state on empty
+      }
+      importBanner.style.display = 'none';
+      return;
+    }
+
+    const parsed = parseTaskContext(text);
+
+    if (parsed) {
+      parsedContextData = parsed;
+      const taskCount = parsed.tasks.length;
+      const totalSlots = parsed.tasks.reduce((sum, t) => sum + t.size, 0);
+      importBannerDesc.textContent = `Terdeteksi ${taskCount} tugas dengan total ${totalSlots} slot.`;
+      importBanner.style.display = 'flex';
+    } else {
+      parsedContextData = null;
+      importBanner.style.display = 'none';
+    }
   }
 
   /** Remove duplicate names (case-insensitive) */
@@ -170,6 +327,17 @@
     return groups;
   }
 
+  /** Split array into groups with variable sizes */
+  function splitIntoCustomGroups(names, sizes) {
+    const groups = [];
+    let index = 0;
+    for (const size of sizes) {
+      groups.push(names.slice(index, index + size));
+      index += size;
+    }
+    return groups;
+  }
+
   /** Generate random number in range */
   function randomRange(min, max) {
     return Math.random() * (max - min) + min;
@@ -178,6 +346,162 @@
   /** Sleep helper */
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // =====================
+  //  Mode Toggle
+  // =====================
+
+  function setMode(mode) {
+    currentMode = mode;
+
+    // Toggle buttons
+    modeSimpleBtn.classList.toggle('active', mode === 'simple');
+    modeCustomBtn.classList.toggle('active', mode === 'custom');
+
+    // Show/hide custom mode elements
+    const isCustom = mode === 'custom';
+    eventTitleGroup.style.display = isCustom ? 'block' : 'none';
+    taskBuilder.style.display = isCustom ? 'block' : 'none';
+    sectionDivider.style.display = isCustom ? 'flex' : 'none';
+    slotMatch.style.display = isCustom ? 'flex' : 'none';
+    simpleControls.style.display = isCustom ? 'none' : 'flex';
+    customControls.style.display = isCustom ? 'flex' : 'none';
+
+    // Add default tasks if empty
+    if (isCustom && taskList.children.length === 0) {
+      addTask('', 2);
+      addTask('', 2);
+    }
+
+    // Hide results on mode switch
+    resultsSection.classList.remove('visible');
+
+    // Update counters
+    updateNameCounter();
+    if (isCustom) updateSlotCounter();
+  }
+
+  // =====================
+  //  Task Builder (Custom Mode)
+  // =====================
+
+  function addTask(name = '', size = 2, emoji = null) {
+    const id = taskIdCounter++;
+    const emojiIndex = taskList.children.length % TASK_EMOJIS.length;
+    const emojiToUse = emoji || TASK_EMOJIS[emojiIndex];
+
+    const item = document.createElement('div');
+    item.className = 'task-item';
+    item.dataset.taskId = id;
+
+    item.innerHTML = `
+      <button class="task-item__emoji" type="button" title="Klik untuk ganti emoji">${emojiToUse}</button>
+      <input
+        class="task-item__name"
+        type="text"
+        placeholder="Nama tugas..."
+        value="${name}"
+        spellcheck="false"
+      />
+      <div class="task-item__size-group">
+        <span class="task-item__size-label">👤</span>
+        <input
+          class="task-item__size"
+          type="number"
+          min="1"
+          max="50"
+          value="${size}"
+        />
+      </div>
+      <button class="task-item__delete" type="button" title="Hapus tugas">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    `;
+
+    // Event: Delete task
+    item.querySelector('.task-item__delete').addEventListener('click', () => {
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(20px)';
+      setTimeout(() => {
+        item.remove();
+        updateSlotCounter();
+      }, 200);
+    });
+
+    // Event: Size change
+    item.querySelector('.task-item__size').addEventListener('input', updateSlotCounter);
+
+    // Event: Emoji click — cycle through emojis
+    const emojiBtn = item.querySelector('.task-item__emoji');
+    emojiBtn.addEventListener('click', () => {
+      const currentIdx = TASK_EMOJIS.indexOf(emojiBtn.textContent);
+      const nextIdx = (currentIdx + 1) % TASK_EMOJIS.length;
+      emojiBtn.textContent = TASK_EMOJIS[nextIdx];
+      emojiBtn.style.transform = 'scale(1.3)';
+      setTimeout(() => { emojiBtn.style.transform = 'scale(1)'; }, 200);
+    });
+
+    taskList.appendChild(item);
+    updateSlotCounter();
+  }
+
+  function getTasksData() {
+    const items = taskList.querySelectorAll('.task-item');
+    const tasks = [];
+    items.forEach((item) => {
+      const emoji = item.querySelector('.task-item__emoji').textContent;
+      const name = item.querySelector('.task-item__name').value.trim();
+      const size = parseInt(item.querySelector('.task-item__size').value) || 1;
+      tasks.push({ emoji, name, size });
+    });
+    return tasks;
+  }
+
+  function getTotalSlots() {
+    return getTasksData().reduce((sum, t) => sum + t.size, 0);
+  }
+
+  function updateSlotCounter() {
+    const total = getTotalSlots();
+    slotCounter.textContent = `${total} slot`;
+    updateSlotMatch();
+  }
+
+  function updateSlotMatch() {
+    if (currentMode !== 'custom') return;
+
+    const names = removeDuplicates(parseNames(namesInput.value));
+    const totalSlots = getTotalSlots();
+    const nameCount = names.length;
+
+    if (nameCount === 0) {
+      slotMatch.className = 'slot-match';
+      slotMatchIcon.textContent = '💡';
+      slotMatchText.textContent = `Masukkan nama — butuh ${totalSlots} orang untuk ${getTasksData().length} tugas`;
+    } else if (nameCount === totalSlots) {
+      slotMatch.className = 'slot-match match';
+      slotMatchIcon.textContent = '✅';
+      slotMatchText.textContent = `Pas! ${nameCount} nama = ${totalSlots} slot tugas`;
+      shuffleCustomBtn.disabled = false;
+    } else if (nameCount < totalSlots) {
+      slotMatch.className = 'slot-match error';
+      slotMatchIcon.textContent = '⚠️';
+      slotMatchText.textContent = `Kurang ${totalSlots - nameCount} orang — punya ${nameCount} nama, butuh ${totalSlots}`;
+      shuffleCustomBtn.disabled = true;
+    } else {
+      slotMatch.className = 'slot-match error';
+      slotMatchIcon.textContent = '⚠️';
+      slotMatchText.textContent = `Kelebihan ${nameCount - totalSlots} orang — punya ${nameCount} nama, butuh ${totalSlots}`;
+      shuffleCustomBtn.disabled = true;
+    }
+
+    // Also disable if no tasks
+    if (getTasksData().length === 0) {
+      shuffleCustomBtn.disabled = true;
+    }
   }
 
   // =====================
@@ -196,7 +520,6 @@
     }
     nameCounter.textContent = counterText;
 
-    // Show preview as title tooltip
     if (count > 0) {
       const preview = unique.slice(0, 8).join(', ');
       const suffix = count > 8 ? `, ... (+${count - 8} lagi)` : '';
@@ -207,16 +530,18 @@
       nameCounter.classList.remove('has-names');
     }
 
-    // Enable/disable shuffle button
-    const groupSize = parseInt(groupSizeSelect.value);
-    shuffleBtn.disabled = count < 2 || count < groupSize;
+    if (currentMode === 'simple') {
+      const groupSize = parseInt(groupSizeSelect.value);
+      shuffleBtn.disabled = count < 2 || count < groupSize;
+    } else {
+      updateSlotMatch();
+    }
   }
 
   // =====================
   //  Animation System
   // =====================
 
-  /** Create animated name cards in the stage */
   function createAnimationCards(names) {
     animationCards.innerHTML = '';
     names.forEach((name, index) => {
@@ -229,7 +554,6 @@
     });
   }
 
-  /** Start shuffle animation on all cards */
   function startShuffleAnimation() {
     const cards = animationCards.querySelectorAll('.name-card');
     cards.forEach(card => {
@@ -240,7 +564,6 @@
     });
   }
 
-  /** Stop shuffle animation */
   function stopShuffleAnimation() {
     const cards = animationCards.querySelectorAll('.name-card');
     cards.forEach(card => {
@@ -248,7 +571,6 @@
     });
   }
 
-  /** Assign colors to cards based on groups */
   function assignCardsToGroups(names, groups) {
     const cards = animationCards.querySelectorAll('.name-card');
     const nameToGroupIndex = new Map();
@@ -273,22 +595,19 @@
     });
   }
 
-  /** Full animation orchestration */
   async function runAnimation(names, groups) {
     isAnimating = true;
 
-    // Show animation stage
     animationStage.classList.add('active');
-    animationTitle.textContent = '🎲 Mengacak kelompok...';
+    animationTitle.textContent = currentMode === 'custom'
+      ? '🎲 Mengacak tugas...'
+      : '🎲 Mengacak kelompok...';
 
-    // Step 1: Create cards with staggered entry
     createAnimationCards(names);
     await sleep(names.length * 40 + 400);
 
-    // Step 2: Shuffle animation
     startShuffleAnimation();
 
-    // Rapid shuffle visual (re-randomize positions multiple times)
     for (let i = 0; i < 4; i++) {
       await sleep(400);
       const cards = animationCards.querySelectorAll('.name-card');
@@ -301,20 +620,24 @@
 
     await sleep(400);
 
-    // Step 3: Stop shuffling and assign colors
     stopShuffleAnimation();
-    animationTitle.textContent = '✨ Membentuk kelompok...';
+    animationTitle.textContent = currentMode === 'custom'
+      ? '✨ Menugaskan anggota...'
+      : '✨ Membentuk kelompok...';
     await sleep(300);
 
     assignCardsToGroups(names, groups);
     await sleep(800);
 
-    // Step 4: Hide animation stage
     animationStage.classList.remove('active');
     await sleep(200);
 
-    // Step 5: Show results with confetti
-    renderResults(groups);
+    if (currentMode === 'custom') {
+      const tasks = getTasksData();
+      renderCustomResults(groups, tasks);
+    } else {
+      renderResults(groups);
+    }
     launchConfetti();
 
     isAnimating = false;
@@ -324,9 +647,13 @@
   //  Results Rendering
   // =====================
 
+  /** Simple mode: generic groups */
   function renderResults(groups) {
     currentGroups = groups;
+    currentTaskNames = [];
+    currentEventTitle = '';
     groupsGrid.innerHTML = '';
+    resultsTitle.textContent = '🎉 Hasil Pembagian Kelompok';
 
     groups.forEach((group, index) => {
       const color = GROUP_COLORS[index % GROUP_COLORS.length];
@@ -357,8 +684,57 @@
     });
 
     resultsSection.classList.add('visible');
+    setTimeout(() => {
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }
 
-    // Smooth scroll to results
+  /** Custom mode: named tasks with emojis */
+  function renderCustomResults(groups, tasks) {
+    currentGroups = groups;
+    currentTaskNames = tasks.map(t => `${t.emoji} ${t.name || 'Tugas'}`);
+    currentEventTitle = eventTitleInput.value.trim();
+    groupsGrid.innerHTML = '';
+
+    // Show event title in results
+    if (currentEventTitle) {
+      resultsTitle.innerHTML = `🎉 ${currentEventTitle}`;
+    } else {
+      resultsTitle.textContent = '🎉 Hasil Pembagian Tugas';
+    }
+
+    groups.forEach((group, index) => {
+      const task = tasks[index] || { emoji: '📋', name: `Tugas ${index + 1}`, size: group.length };
+      const color = GROUP_COLORS[index % GROUP_COLORS.length];
+      const card = document.createElement('div');
+      card.className = 'group-card';
+      card.style.setProperty('--group-color', color.hex);
+      card.style.setProperty('--delay', `${index * 100}ms`);
+
+      const taskName = task.name || `Tugas ${index + 1}`;
+
+      card.innerHTML = `
+        <div class="group-card__header">
+          <span class="group-card__name">
+            <span>${task.emoji}</span>
+            ${taskName}
+          </span>
+          <span class="group-card__badge">${group.length} orang</span>
+        </div>
+        <div class="group-card__members">
+          ${group.map((name, i) => `
+            <div class="member-item">
+              <span class="member-item__number">${i + 1}.</span>
+              <span>${name}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      groupsGrid.appendChild(card);
+    });
+
+    resultsSection.classList.add('visible');
     setTimeout(() => {
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 300);
@@ -399,7 +775,6 @@
 
     function animate() {
       ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-
       let activeCount = 0;
 
       particles.forEach(p => {
@@ -412,7 +787,6 @@
         p.rotation += p.rotationSpeed;
         p.wobble += p.wobbleSpeed;
 
-        // Fade out when near bottom
         if (p.y > confettiCanvas.height * 0.85) {
           p.opacity -= 0.02;
         }
@@ -443,12 +817,24 @@
 
   function groupsToText(groups) {
     let text = '═══════════════════════════════\n';
-    text +=    '  HASIL PEMBAGIAN KELOMPOK\n';
-    text +=    '  Generated by TeamUp\n';
-    text +=    '═══════════════════════════════\n\n';
+
+    if (currentMode === 'custom' && currentEventTitle) {
+      text += `  ${currentEventTitle.toUpperCase()}\n`;
+    } else {
+      text += '  HASIL PEMBAGIAN KELOMPOK\n';
+    }
+    text += '  Generated by TeamUp\n';
+    text += '═══════════════════════════════\n\n';
 
     groups.forEach((group, index) => {
-      text += `── Kelompok ${index + 1} (${group.length} anggota) ──\n`;
+      let groupName;
+      if (currentTaskNames.length > 0 && currentTaskNames[index]) {
+        groupName = currentTaskNames[index];
+      } else {
+        groupName = `Kelompok ${index + 1}`;
+      }
+
+      text += `── ${groupName} (${group.length} orang) ──\n`;
       group.forEach((name, i) => {
         text += `   ${i + 1}. ${name}\n`;
       });
@@ -456,7 +842,7 @@
     });
 
     text += '═══════════════════════════════\n';
-    text += `Total: ${groups.flat().length} mahasiswa → ${groups.length} kelompok\n`;
+    text += `Total: ${groups.flat().length} orang → ${groups.length} ${currentMode === 'custom' ? 'tugas' : 'kelompok'}\n`;
     return text;
   }
 
@@ -469,7 +855,6 @@
       copyBtn.classList.add('copied');
       setTimeout(() => copyBtn.classList.remove('copied'), 2000);
     }).catch(() => {
-      // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = text;
       document.body.appendChild(textarea);
@@ -488,7 +873,12 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `TeamUp_Kelompok_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.txt`;
+
+    const prefix = currentEventTitle
+      ? currentEventTitle.replace(/\s+/g, '_')
+      : 'TeamUp_Kelompok';
+    a.download = `${prefix}_${new Date().toLocaleDateString('id-ID').replace(/\//g, '-')}.txt`;
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -512,10 +902,11 @@
   }
 
   // =====================
-  //  Main Shuffle Handler
+  //  Main Shuffle Handlers
   // =====================
 
-  async function handleShuffle() {
+  /** Simple mode shuffle */
+  async function handleSimpleShuffle() {
     if (isAnimating) return;
 
     let names = parseNames(namesInput.value);
@@ -533,16 +924,39 @@
       return;
     }
 
-    // Hide previous results
     resultsSection.classList.remove('visible');
 
-    // Shuffle names
     const shuffledNames = fisherYatesShuffle(names);
-
-    // Split into groups
     const groups = splitIntoGroups(shuffledNames, groupSize);
 
-    // Run animation
+    await runAnimation(shuffledNames, groups);
+  }
+
+  /** Custom mode shuffle */
+  async function handleCustomShuffle() {
+    if (isAnimating) return;
+
+    let names = parseNames(namesInput.value);
+    names = removeDuplicates(names);
+    const tasks = getTasksData();
+    const totalSlots = tasks.reduce((sum, t) => sum + t.size, 0);
+
+    if (names.length !== totalSlots) {
+      showToast(`⚠️ Jumlah nama (${names.length}) tidak sesuai total slot (${totalSlots})!`);
+      return;
+    }
+
+    if (tasks.length === 0) {
+      showToast('⚠️ Tambahkan minimal 1 tugas!');
+      return;
+    }
+
+    resultsSection.classList.remove('visible');
+
+    const shuffledNames = fisherYatesShuffle(names);
+    const sizes = tasks.map(t => t.size);
+    const groups = splitIntoCustomGroups(shuffledNames, sizes);
+
     await runAnimation(shuffledNames, groups);
   }
 
@@ -550,14 +964,60 @@
   //  Event Listeners
   // =====================
 
-  // Live name counter
-  namesInput.addEventListener('input', updateNameCounter);
+  // Mode toggle
+  modeSimpleBtn.addEventListener('click', () => setMode('simple'));
+  modeCustomBtn.addEventListener('click', () => setMode('custom'));
 
-  // Group size change
+  // Live name counter and task format detection
+  namesInput.addEventListener('input', () => {
+    updateNameCounter();
+    checkNamesInputForTasks();
+  });
+
+  // Import banner buttons
+  importBtn.addEventListener('click', () => {
+    if (!parsedContextData) return;
+
+    // Switch to custom mode
+    setMode('custom');
+
+    // Set event title
+    eventTitleInput.value = parsedContextData.eventTitle;
+
+    // Clear and build tasks
+    taskList.innerHTML = '';
+    parsedContextData.tasks.forEach(task => {
+      addTask(task.name, task.size, task.emoji);
+    });
+
+    // Populate textarea with names
+    namesInput.value = parsedContextData.names.join('\n');
+
+    // Update counters and slots
+    updateNameCounter();
+    updateSlotCounter();
+
+    // Hide banner & reset
+    importBanner.style.display = 'none';
+    parsedContextData = null;
+
+    showToast('✨ Berhasil mengimpor tugas & nama!');
+  });
+
+  importCloseBtn.addEventListener('click', () => {
+    isBannerDismissed = true;
+    importBanner.style.display = 'none';
+  });
+
+  // Group size change (simple mode)
   groupSizeSelect.addEventListener('change', updateNameCounter);
 
-  // Shuffle button
-  shuffleBtn.addEventListener('click', handleShuffle);
+  // Shuffle buttons
+  shuffleBtn.addEventListener('click', handleSimpleShuffle);
+  shuffleCustomBtn.addEventListener('click', handleCustomShuffle);
+
+  // Add task button
+  addTaskBtn.addEventListener('click', () => addTask('', 2));
 
   // Copy button
   copyBtn.addEventListener('click', copyToClipboard);
@@ -565,8 +1025,14 @@
   // Download button
   downloadBtn.addEventListener('click', downloadAsText);
 
-  // Reshuffle button
-  reshuffleBtn.addEventListener('click', handleShuffle);
+  // Reshuffle button — uses correct handler based on mode
+  reshuffleBtn.addEventListener('click', () => {
+    if (currentMode === 'custom') {
+      handleCustomShuffle();
+    } else {
+      handleSimpleShuffle();
+    }
+  });
 
   // Handle window resize for confetti canvas
   window.addEventListener('resize', () => {
@@ -576,13 +1042,18 @@
 
   // Keyboard shortcut: Ctrl+Enter to shuffle
   namesInput.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter' && !shuffleBtn.disabled) {
+    if (e.ctrlKey && e.key === 'Enter') {
       e.preventDefault();
-      handleShuffle();
+      if (currentMode === 'custom') {
+        if (!shuffleCustomBtn.disabled) handleCustomShuffle();
+      } else {
+        if (!shuffleBtn.disabled) handleSimpleShuffle();
+      }
     }
   });
 
   // Initialize
   updateNameCounter();
+  checkNamesInputForTasks();
 
 })();
